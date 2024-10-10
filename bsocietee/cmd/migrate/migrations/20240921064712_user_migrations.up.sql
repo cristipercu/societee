@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS public.users(
+  id SERIAL PRIMARY KEY,
+  username VARCHAR NOT NULL UNIQUE,
+  email VARCHAR UNIQUE NOT NULL,
+  password VARCHAR NOT NULL,
+  created_on TIMESTAMP DEFAULT (now() AT TIME ZONE 'UTC'),
+  modified_on TIMESTAMP DEFAULT (now() AT TIME ZONE 'UTC')
+);
+
+
