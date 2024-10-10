@@ -1,22 +1,26 @@
 <script>
-import { API_BASE_URL, ROOM_ID_LENGTH } from '../scripts/config.js';
-import { makeid } from '../scripts/utils.js'
 import { Link } from "svelte-routing";
+import {isTokenExpired} from "../scripts/utils"
 
-function handleClick() {
-  roomid = makeid(ROOM_ID_LENGTH)
-  console.log(roomid)
-}
+let displayName = localStorage.getItem('displayName')
+let token = localStorage.getItem('token')
+let tokenExpired = isTokenExpired(token)
 
-function handleRegister() {
-
-}
+console.log(token);
+console.log(tokenExpired);
 
 </script>
 
-<h1>Have fun!</h1>
 
-<!-- <button type="button" class="btn btn-dark" on:click={handleClick}>create room</button> -->
+{#if tokenExpired}
 <Link to="/register">
-<button type="button" class="btn btn-dark" on:click={handleRegister}>Register</button>
+<button type="button" class="btn btn-dark">register</button>
 </Link>
+
+<Link to="/login">
+<button type="button" class="btn btn-dark">login</button>
+</Link>
+{:else}
+<h1>have fun {displayName}!</h1>
+
+{/if}

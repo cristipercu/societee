@@ -6,7 +6,6 @@
   let password = '';
   let message = '';
 
-
   async function handleSubmit() {
     try {
       const response = await fetch(`${API_URL}/register`, {
@@ -18,11 +17,9 @@
       if (response.ok) {
         setTimeout(() => {
           window.location.href = '/'; 
-        }, 2000);
-      } else {
-        const data = await response.json();
-        message = data.message;
-        console.log(message);
+        }, 1000);
+      } else if (response.status === 409){
+        message = "email or user already exists"
       }
     } catch (error) {
       message = 'Somethin went wrong in the back!';
