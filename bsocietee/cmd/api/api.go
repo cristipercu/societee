@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/cristipercu/societee/bsocietee/service/game"
+	"github.com/cristipercu/societee/bsocietee/service/room"
 	"github.com/cristipercu/societee/bsocietee/service/user"
 	"github.com/gorilla/mux"
 )
@@ -33,7 +35,13 @@ func (api *APIserver) Run() error {
   userHandler := user.NewHandler(userStore)
   userHandler.RegisterRoutes(subrouter)
 
+  roomStore := room.NewStore(api.db)
+	roomHandler := room.NewHandler(roomStore, userStore)
+	roomHandler.RegisterRoutes(subrouter)
 
+	gameStore := game.NewStore(api.db)
+	gameHandler := game.NewHandler(gameStore, userStore, roomStore)
+	gameHandler.RegisterRoutes(subrouter)
   log.Printf("Listening on %s", api.addr )
 
   return http.ListenAndServe(api.addr, corsMiddleware(router))
@@ -41,24 +49,21 @@ func (api *APIserver) Run() error {
 
 
 func corsMiddleware(next http.Handler) http.Handler {
- return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
- log.Println("Executing middleware", r.Method)
-
-
- if r.Method == "OPTIONS" {
- w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8080")
- w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS")
- w.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, X-Auth-Token, Authorization")
-w.Header().Set("Content-Type", "application/json")
- return
- }
-
-if r.Method == "POST" {
- w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8080")
+  return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    log.Println("Executing middleware", r.Method)
+    if r.Method == "OPTIONS" {
+      // w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8080")
+      w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8080")
+      w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS")
+      w.Header().Set("Access-Control-Allow-Headers", "Origin, Content-Type, X-Auth-Token, Authorization")
+      w.Header().Set("Content-Type", "application/json")
+      return
     }
-
-
- next.ServeHTTP(w, r)
- log.Println("Executing middleware again")
- })
+  if r.Method == "POST" {
+      // w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8080")
+      w.Header().Set("Access-Control-Allow-Origin", "http://localhost:8080")
+  }
+  next.ServeHTTP(w, r)
+  log.Println("Executing middleware again")
+  })
 }

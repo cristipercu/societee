@@ -1,12 +1,13 @@
 <script>
   import { API_URL } from '../scripts/config.js';
+  import { navigate } from "svelte-routing";
 
   let username = '';
   let email = '';
   let password = '';
   let message = '';
 
-  async function handleSubmit() {
+async function handleSubmit() {
     try {
       const response = await fetch(`${API_URL}/register`, {
         method: 'POST',
@@ -16,7 +17,7 @@
 
       if (response.ok) {
         setTimeout(() => {
-          window.location.href = '/'; 
+          navigate("/", {replace: true});
         }, 1000);
       } else if (response.status === 409){
         message = "email or user already exists"

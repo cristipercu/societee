@@ -8,10 +8,7 @@
   let url = `${API_URL}/login`
 
 async function handleSubmit() {
-  try {
     await handleLogin(email, password, message, url);
-  } catch (error) {
-  }
 }
 </script>
 

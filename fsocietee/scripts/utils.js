@@ -1,6 +1,6 @@
 export function makeid(length) {
   let result = '';
-  const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const characters = 'abcdefghijklmnopqrstuvwxyz0123456789';
   const charactersLength = characters.length;
   let counter = 0;
   while (counter < length) {
@@ -11,28 +11,70 @@ export function makeid(length) {
 }
 
 export async function handleLogin(email, password, message, url) {
-    try {
       const response = await fetch(url , {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
+      const data = await response.json();   
       if (response.ok) {
-        const data = await response.json();   
-
         localStorage.setItem('token', data.token);
         localStorage.setItem('displayName', data.user);
-        window.location.href = '/';
+        window.location.href = '/'; 
       } else {
-        const data = await response.json();
         message = data.error;
       }
-    } catch (error) {
-      message = 'error connecting to server, call CP!';
-    }
   }
 
+export function connectToWebsocket(url, onOpen, onMessage, onClose, onError) {
+  const ws = new WebSocket(url);
+
+  ws.onopen = () => {
+    if (onOpen) {
+      onOpen(ws);
+    }
+  };
+
+  ws.onmessage = (event) => {
+    if (onMessage) {
+      onMessage(event.data);
+    } else {
+      console.log(event.data);
+    }
+  };
+
+  ws.onclose = () => {
+    if (onClose) {
+      onClose();
+    } else {
+      ws.close()
+    }
+
+  };
+
+  ws.onerror = (error) => {
+    console.error('ws error:', error);
+    if (onError) {
+      onError(error);
+    }
+  };
+
+  return ws;
+}
+
+export function sendMessage(ws, user, type, message) {
+  if (ws.readyState === WebSocket.OPEN) {
+    const messageData = {
+      user: user,
+      type: type,
+      message: message
+    };
+    ws.send(JSON.stringify(messageData));
+  } else {
+    console.error('no ws connection');
+  }
+}
 
 export function parseJwt (token) {
     var base64Url = token.split('.')[1];
@@ -57,3 +99,12 @@ export function isTokenExpired (token) {
   }
 }
 
+export function clearGameLogicFromLocalStorage() {
+  localStorage.removeItem('roomCode');
+  localStorage.removeItem('roomID');
+  localStorage.removeItem('roomAdmin');
+}
+
+export function AmITheAdmin() {
+  return localStorage.getItem('displayName') === localStorage.getItem('roomAdmin')
+}

@@ -1,0 +1,9 @@
+DROP TABLE IF EXISTS public.room_members CASCADE;
+DROP TABLE IF EXISTS public.rooms CASCADE;
+DROP TABLE IF EXISTS public.user_words CASCADE;
+DROP TABLE IF EXISTS public.game_settings CASCADE;
+DROP TABLE IF EXISTS public.teams CASCADE; 
+DROP TABLE IF EXISTS public.game_rounds CASCADE;
+DROP TABLE IF EXISTS public.game_state CASCADE;
+DROP TABLE IF EXISTS public.game CASCADE;
+DROP TABLE IF EXISTS public.game_words_state CASCADE;
