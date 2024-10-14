@@ -28,7 +28,9 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/rooms", auth.WithJWTAuth(h.handleCreateRoom, h.userStore)).Methods(http.MethodPost)
   router.HandleFunc("/roomCode", auth.WithJWTAuth(h.handleGetRoomByRoomCode, h.userStore)).Methods(http.MethodPost)
 	router.HandleFunc("/ws/rooms/{room_id}", auth.WithJWTAuth(h.wsHandler, h.userStore)).Methods(http.MethodGet)
-  router.HandleFunc("/rooms/addme", auth.WithJWTAuth(h.handleJoinRoom, h.userStore)).Methods(http.MethodPost)
+  router.HandleFunc("/rooms/join", auth.WithJWTAuth(h.handleJoinRoom, h.userStore)).Methods(http.MethodPost)
+  router.HandleFunc("/rooms/leave", auth.WithJWTAuth(h.handleLeaveRoom, h.userStore)).Methods(http.MethodPost)
+  router.HandleFunc("/rooms/members/{room_id}", auth.WithJWTAuth(h.handleGetRoomMembers, h.userStore)).Methods(http.MethodGet)
 }
 
 // Create Room
@@ -44,7 +46,7 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 //	@Router			/rooms [post]
 func (h *Handler) handleCreateRoom(w http.ResponseWriter, r *http.Request) {
   var payload types.CreateRoomPayload
-
+  // TODO: return utils.WriteError on error, not empty return you dumb f...
 	if err := utils.ParseJSON(r, &payload); err != nil {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
@@ -99,6 +101,52 @@ func (h *Handler) handleJoinRoom(w http.ResponseWriter, r *http.Request) {
 
   utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "added"})
 }
+
+func (h *Handler) handleLeaveRoom(w http.ResponseWriter, r *http.Request) {
+  var payload types.RoomMember
+  log.Println("sunt in leave")
+
+  if err := utils.ParseJSON(r, &payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if err := utils.Validate.Struct(payload); err != nil {
+		error := err.(validator.ValidationErrors)
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid payload: %v", error))
+		return
+	}
+
+  err := h.store.LeaveRoom(payload.RoomID, payload.PlayerName)
+
+  if err != nil {
+    utils.WriteError(w, http.StatusInternalServerError, err)
+    return
+  }
+
+  utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "removed"})
+}
+
+
+func (h *Handler) handleGetRoomMembers(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	room_id := vars["room_id"]
+	room_idInt, err := strconv.Atoi(room_id)
+	if err != nil {
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("the room id should be int"))
+		return
+	}
+
+  members, err := h.store.GetRoomMembers(room_idInt)
+
+  if err != nil {
+    utils.WriteError(w, http.StatusBadRequest, err)
+  }
+
+  log.Println(members)
+  utils.WriteJSON(w, http.StatusOK, members)
+}
+
 
 type ChatRoom struct {
 	connections []*websocket.Conn

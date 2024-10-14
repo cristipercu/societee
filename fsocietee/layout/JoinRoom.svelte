@@ -1,6 +1,7 @@
 <script>
 import { navigate } from "svelte-routing";
 import { API_URL } from "../scripts/config"
+import { getInternalApiHeaders } from "../scripts/utils.js"
 
 let room_code = '';
 let password = '';
@@ -32,15 +33,15 @@ async function handleSubmit() {
       localStorage.setItem('roomID', data.id);
       localStorage.setItem('roomAdmin', data.owner_name);
       addMeToRoom();
-      navigate('/room');
     }
   } catch (error) {
+    // TODO: return room code does not exists if it is the case
     message = 'error connecting to server, call CP';
   }
 }; 
 
 async function addMeToRoom() {
-  let url = `${API_URL}/rooms/addme`;
+  let url = `${API_URL}/rooms/join`;
   try {
     const response = await fetch(url, {
       method: 'POST',
@@ -50,11 +51,11 @@ async function addMeToRoom() {
     
     const data = await response.json();
     if (!response.ok) {
-      console.log('adding user to room not ok')
+      console.log(data.error)
     };
 
     if (response.ok) {
-      console.log(data);
+      navigate('/room');
     };
 
   } catch (error) {

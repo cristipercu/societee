@@ -1,7 +1,7 @@
 <script>
-    import Teams from "../components/Teams.svelte";
+import Teams from "../components/Teams.svelte";
 import { API_URL, WS_URL } from "../scripts/config";
-import { AmITheAdmin, connectToWebsocket, sendMessage } from "../scripts/utils.js"
+import { AmITheAdmin, connectToWebsocket, getInternalApiHeaders, sendMessage } from "../scripts/utils.js"
 import { onMount, onDestroy } from 'svelte';
 
 let roomCode = localStorage.getItem('roomCode');
@@ -10,8 +10,7 @@ let adminFlag = AmITheAdmin();
 let displayName = localStorage.getItem('displayName');
 let number_of_words_per_player = 10;
 let time_per_player = 60;
-let url = `${API_URL}/games/settings`;
-let ws_url = `${WS_URL}/ws/rooms/${roomID}`;
+let ws_url = `${WS_URL}/ws/rooms/${roomID}?token=${localStorage.getItem('token')}`;
 let html_message;
 let ws;
 let players = [];
@@ -24,6 +23,28 @@ function number_of_words_on_imput(event) {
 function time_per_player_on_imput(event) {
   time_per_player = event.target.value
 };
+
+async function getRoomMembers() {
+  let url = `${API_URL}/rooms/members/${roomID}`;
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: getInternalApiHeaders(true)
+    });
+    
+    const data = await response.json()
+    if (!response.ok) {
+      html_message = data.error;    
+    }
+
+    if (response.ok) {
+      console.log(data);
+      return data
+    }
+  } catch (error) {
+    html_message = error; 
+  }
+} 
 
 onMount(() => {
 function onOpen(ws) {
@@ -46,7 +67,7 @@ function onMessage(message) {
   let data = JSON.parse(message)
   switch (data.type) {
     case 'join_room':
-      players = [...players, data.user];
+      players = getRoomMembers();
       if (data.user != displayName) {
         html_message = `${data.user} joined the room`;
         appendAlert(html_message, 'dark');
@@ -61,14 +82,54 @@ function onMessage(message) {
 ws = connectToWebsocket(ws_url, onOpen = onOpen, onMessage=onMessage);
 })
 
+async function removeMeFromRoom() {
+  let url = `${API_URL}/rooms/leave`;
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: getInternalApiHeaders(true),
+      body: JSON.stringify({"room_id": roomID, "player_name": displayName})
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      html_message = data.error
+    };
+    if (response.ok) {
+      console.log(data)
+    };
+  } catch (error) {
+    console.log(error)
+  }
+}
+
 onDestroy(() => {
-    if (ws) {
-      sendMessage(ws, displayName, 'leave', 'ciao');
-      ws.close()
+  if (ws) {
+    removeMeFromRoom()
+    sendMessage(ws, displayName, 'leave', 'ciao');
+    ws.close()
+    const apiUrl =`${API_URL}/rooms/leave`;
+    const data =  {"room_id": roomID, "player_name": displayName}
+
+    fetch(apiUrl, {
+      method: 'POST',
+      headers: getInternalApiHeaders(true), 
+      body: JSON.stringify(data)
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Eroare  la trimiterea requestului');
+      }
+      return response.json();
+    })
+    .then(data => {
+      console.log('Răspuns de la API:', data);
+    })
+    .catch(error => {
+      console.error('Eroare:', error);
+    });
   }
 });
-
-
 
 </script>
 

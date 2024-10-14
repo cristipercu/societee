@@ -75,7 +75,7 @@ func (s *Store) AddMemberToRoom(roomID int, playerName string) error {
 
 	for _, member := range current_members {
 		if member.PlayerName == playerName {
-			return nil
+			return fmt.Errorf("player already in the room")
 		}
 	}
   log.Println(roomID, playerName)
