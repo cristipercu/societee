@@ -6,13 +6,15 @@ let room_code = '';
 let password = '';
 let message;
 let showPassword = false
+let roomID;
+let displayName = localStorage.getItem('displayName');
 
 async function handleSubmit() {
   let url = `${API_URL}/roomCode`
   try {
     const response = await fetch(url, {
       method: 'POST',
-      'headers': {'Content-Type': 'application/json'},
+      headers: getInternalApiHeaders(true),
       body: JSON.stringify({room_code, password}),
     });
 
@@ -25,15 +27,40 @@ async function handleSubmit() {
     }
 
     if (response.ok) {
+      roomID = data.id;
       localStorage.setItem('roomCode', data.room_code);
       localStorage.setItem('roomID', data.id);
       localStorage.setItem('roomAdmin', data.owner_name);
+      addMeToRoom();
       navigate('/room');
     }
   } catch (error) {
     message = 'error connecting to server, call CP';
   }
 }; 
+
+async function addMeToRoom() {
+  let url = `${API_URL}/rooms/addme`;
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: getInternalApiHeaders(true),
+      body: JSON.stringify({"room_id": roomID, "player_name": displayName})
+    });
+    
+    const data = await response.json();
+    if (!response.ok) {
+      console.log('adding user to room not ok')
+    };
+
+    if (response.ok) {
+      console.log(data);
+    };
+
+  } catch (error) {
+  message = 'error connecting to server, call CP';
+  }
+}
 
 function togglePasswordVisibility() {
     showPassword = !showPassword;

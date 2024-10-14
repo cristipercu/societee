@@ -1,6 +1,7 @@
 <script>
 import { navigate } from "svelte-routing";
 import { API_URL } from '../scripts/config.js';
+import { getInternalApiHeaders } from "../scripts/utils.js"
 import { makeid } from '../scripts/utils';
 
 let max_members = 4;
@@ -25,7 +26,7 @@ async function handleSubmit() {
     try {
       const response = await fetch(`${API_URL}/rooms`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getInternalApiHeaders(true),
         body: JSON.stringify({room_code, password, owner_name, max_members }),
       });
 

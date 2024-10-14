@@ -7,11 +7,12 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/cristipercu/societee/bsocietee/service/auth"
+	"github.com/cristipercu/societee/bsocietee/types"
+	"github.com/cristipercu/societee/bsocietee/utils"
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/websocket"
-	"github.com/cristipercu/societee/bsocietee/types"
-	"github.com/cristipercu/societee/bsocietee/utils"
 )
 
 type Handler struct {
@@ -24,9 +25,10 @@ func NewHandler(store types.RoomStore, userStore types.UserStore) *Handler {
 }
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
-	router.HandleFunc("/rooms", h.handleCreateRoom).Methods(http.MethodPost)
-  router.HandleFunc("/roomCode", h.handleGetRoomByRoomCode).Methods(http.MethodPost)
-	router.HandleFunc("/ws/rooms/{room_id}", h.wsHandler).Methods(http.MethodGet)
+	router.HandleFunc("/rooms", auth.WithJWTAuth(h.handleCreateRoom, h.userStore)).Methods(http.MethodPost)
+  router.HandleFunc("/roomCode", auth.WithJWTAuth(h.handleGetRoomByRoomCode, h.userStore)).Methods(http.MethodPost)
+	router.HandleFunc("/ws/rooms/{room_id}", auth.WithJWTAuth(h.wsHandler, h.userStore)).Methods(http.MethodGet)
+  router.HandleFunc("/rooms/addme", auth.WithJWTAuth(h.handleJoinRoom, h.userStore)).Methods(http.MethodPost)
 }
 
 // Create Room
@@ -61,15 +63,41 @@ func (h *Handler) handleCreateRoom(w http.ResponseWriter, r *http.Request) {
 		Password:   payload.Password,
 		OwnerName:  payload.OwnerName,
 		MaxMembers: payload.MaxMembers,
-	}, payload.OwnerName)
+	})
+
 
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
 
+
 	utils.WriteJSON(w, http.StatusCreated, map[string]int{"room_id": room_id})
 
+}
+
+func (h *Handler) handleJoinRoom(w http.ResponseWriter, r *http.Request) {
+  var payload types.RoomMember
+
+  if err := utils.ParseJSON(r, &payload); err != nil {
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if err := utils.Validate.Struct(payload); err != nil {
+		error := err.(validator.ValidationErrors)
+		utils.WriteError(w, http.StatusBadRequest, fmt.Errorf("invalid payload: %v", error))
+		return
+	}
+
+  err := h.store.AddMemberToRoom(payload.RoomID, payload.PlayerName)
+
+  if err != nil {
+    utils.WriteError(w, http.StatusInternalServerError, err)
+    return
+  }
+
+  utils.WriteJSON(w, http.StatusOK, map[string]string{"message": "added"})
 }
 
 type ChatRoom struct {

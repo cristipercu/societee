@@ -6,16 +6,16 @@ function addTeam() {
   if (teams.length >= 2) {
     return
   }
-  teams = [...teams, { name: generateTeamName(), players: [''] }];
+  teams = [...teams, { name: generateTeamName(), members: [''] }];
   if (teams.length >= 2) {
     maxTeamsFlag = true;
   };
 };
 
 function addMember(teamIndex) {
-  teams[teamIndex].players = [...teams[teamIndex].players, ''];
-  //TODO: check the max number of players in the room and do not allow 
-  //to add if the total number is greater than the players
+  teams[teamIndex].members = [...teams[teamIndex].members, ''];
+  //TODO: check the max number of members in the room and do not allow 
+  //to add if the total number is greater than the members
 };
 
 const nouns = [
@@ -86,10 +86,10 @@ function validateTeams() {
       {#each teams as team, i}
         <div>
           <h6> team {team.name} </h6>
-          {#each team.players as player, j}
+          {#each team.members as member, j}
             <div class="form-group mt-1">
-            <label for="team-{i}-player-{j}">player {j + 1}:</label>
-            <input type="text" class="form-control" id="team-{i}-player-{j}" bind:value={teams[i].players[j]}>
+            <label for="team-{i}-member-{j}">player {j + 1}:</label>
+            <input type="text" class="form-control" id="team-{i}-member-{j}" bind:value={teams[i].members[j]}>
             </div>
           {/each}
           <button type="button" class="btn btn-dark mt-1" on:click={() => addMember(i)}>add member</button>

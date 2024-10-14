@@ -3,6 +3,7 @@ package room
 import (
 	"database/sql"
 	"fmt"
+	"log"
 
 	"github.com/cristipercu/societee/bsocietee/types"
 )
@@ -15,7 +16,7 @@ func NewStore(db *sql.DB) *Store {
 	return &Store{db: db}
 }
 
-func (s *Store) CreateRoom(room types.Room, playerName string) (int, error) {
+func (s *Store) CreateRoom(room types.Room) (int, error) {
 	var room_id int
 	err := s.db.QueryRow(`INSERT INTO public.rooms (room_code, password, owner_name, max_members)
 	VALUES ($1, $2, $3, $4) RETURNING id`, room.RoomCode, room.Password, room.OwnerName, room.MaxMembers).Scan(&room_id)
@@ -23,7 +24,12 @@ func (s *Store) CreateRoom(room types.Room, playerName string) (int, error) {
 		return room_id, err
 	}
 
-	s.AddMemberToRoom(room.ID, playerName, room.MaxMembers)
+  log.Println(room)
+
+	err = s.AddMemberToRoom(room_id, room.OwnerName)
+  if err != nil {
+    return room_id, err
+  }
 
 	return room_id, nil
 }
@@ -51,12 +57,17 @@ func (s *Store) GetRoomByRoomCode(roomCode string) (types.Room, error) {
 }
 
 
-func (s *Store) AddMemberToRoom(roomID int, playerName string, max_members int) error {
-
+func (s *Store) AddMemberToRoom(roomID int, playerName string) error {
 	current_members, err := s.GetRoomMembers(roomID)
 	if err != nil {
 		return err
 	}
+
+  var max_members int
+  err = s.db.QueryRow(`SELECT max_members FROM public.rooms WHERE id = $1`, roomID).Scan(&max_members)
+  if err != nil {
+    return err
+  }
 
 	if len(current_members) >= max_members {
 		return fmt.Errorf("room is full")
@@ -67,6 +78,7 @@ func (s *Store) AddMemberToRoom(roomID int, playerName string, max_members int) 
 			return nil
 		}
 	}
+  log.Println(roomID, playerName)
 
 	_, err = s.db.Exec(`INSERT INTO public.room_members (room_id, player_name) VALUES ($1, $2)`, roomID, playerName)
 

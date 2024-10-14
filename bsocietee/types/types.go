@@ -38,9 +38,9 @@ type LoginUserPayload struct {
 }
 
 type RoomStore interface {
-	CreateRoom(Room, string) (int, error)
+	CreateRoom(Room) (int, error)
 	GetRoomById(int) (Room, error)
-	AddMemberToRoom(int, string, int) error
+	AddMemberToRoom(int, string) error
 	GetRoomMembers(int) ([]RoomMember, error)
 	LeaveRoom(int, string) error
   GetRoomByRoomCode(string) (Room, error)

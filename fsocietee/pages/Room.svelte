@@ -27,7 +27,7 @@ function time_per_player_on_imput(event) {
 
 onMount(() => {
 function onOpen(ws) {
-  sendMessage(ws, displayName, 'join_room', 'sunt aici')
+  sendMessage(ws, displayName, 'join_room', 'here i am')
 }
 const alertPlaceholder = document.getElementById('liveAlertPlaceholder')
 const appendAlert = (message, type) => {
@@ -42,16 +42,16 @@ const appendAlert = (message, type) => {
 }
 
 
-
 function onMessage(message) {
   let data = JSON.parse(message)
   switch (data.type) {
     case 'join_room':
+      players = [...players, data.user];
       if (data.user != displayName) {
         html_message = `${data.user} joined the room`;
-        players = [...players, data.user];
         appendAlert(html_message, 'dark');
       }
+      console.log(players);
       break
     case 'leave':
       appendAlert(`${data.user} left the building`, 'danger')
@@ -62,7 +62,6 @@ ws = connectToWebsocket(ws_url, onOpen = onOpen, onMessage=onMessage);
 })
 
 onDestroy(() => {
-    console.log('Componenta va fi demontată!');
     if (ws) {
       sendMessage(ws, displayName, 'leave', 'ciao');
       ws.close()

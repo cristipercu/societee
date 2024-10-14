@@ -10,6 +10,19 @@ export function makeid(length) {
   return result;
 }
 
+export function getInternalApiHeaders(withLogin) {
+  if (withLogin) {
+    return { 
+      'Content-Type': 'application/json',
+      'Authorization': localStorage.getItem('token')
+    }
+  } else {
+    return {
+      'Content-Type': 'application/json'
+    }
+  }
+}
+
 export async function handleLogin(email, password, message, url) {
       const response = await fetch(url , {
         method: 'POST',
